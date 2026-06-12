@@ -1,0 +1,93 @@
+# ╭──────────────────────────────────────────────────────────────────────────╮
+# │ DOKPLOY stack — APPLICATIONS ONLY (Dokploy-compatible)                      │
+# │   app (NestJS API) + web (Vue 3 SPA, nginx static), built from multi-stage           │
+# │   Dockerfiles.                                                               │
+# │                                                                            │
+# │   NO postgres / redis here — provision those in Dokploy and inject their    │
+# │   connection strings as environment variables.                              │
+# │                                                                            │
+# │   Routing/TLS is handled by Dokploy's Traefik on `dokploy-network`. Set the │
+# │   real domains in the Dokploy UI (or uncomment the Traefik labels below).   │
+# ╰──────────────────────────────────────────────────────────────────────────╯
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: starterkit-app:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${API_PORT:-4400}
+      API_PREFIX: ${API_PREFIX:-api}
+      # ── Provisioned in Dokploy ──
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_DAYS: ${JWT_REFRESH_EXPIRES_DAYS:-7}
+      # Base URL of the frontend — drives CORS origin and password-reset link.
+      APP_URL: ${APP_URL}
+      # CORS_ORIGIN defaults to APP_URL in code; set only to explicitly override.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      # Shared PARENT domain (e.g. example.com) so the refresh_token cookie reaches
+      # BOTH app.example.com + api.example.com. Without it the cookie is host-only
+      # to the API host → browser never sends it to the web host → logout on refresh.
+      # Leave UNSET only if web + api share one host (single-origin).
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # File logging — daily-rotated files persisted to the app_logs volume below.
+      LOG_DIR: ${LOG_DIR:-./storage/logs}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-7}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SWAGGER_USER: ${SWAGGER_USER}
+      SWAGGER_PASSWORD: ${SWAGGER_PASSWORD}
+    # Persist daily-rotated log files. Dokploy named volume (Method 2) → backup-able
+    # via Dokploy's Volume Backups. WORKDIR=/app/apps/api + LOG_DIR=./storage/logs.
+    volumes:
+      - app_logs:/app/apps/api/storage/logs
+    expose:
+      - "${API_PORT:-4400}"
+    networks: [dokploy-network]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # - traefik.http.routers.starterkit-app.rule=Host(`api.example.com`)
+      # - traefik.http.routers.starterkit-app.entrypoints=websecure
+      # - traefik.http.routers.starterkit-app.tls.certresolver=letsencrypt
+      # - traefik.http.services.starterkit-app.loadbalancer.server.port=4400
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE}
+        VITE_REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
+    image: starterkit-web:latest
+    restart: unless-stopped
+    # Static SPA served by nginx inside the image (port 4301) — no runtime env needed;
+    # public config is baked into the bundle via the VITE_* build args above.
+    expose:
+      - "${WEB_PORT:-4301}"
+    depends_on:
+      - app
+    networks: [dokploy-network]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # - traefik.http.routers.starterkit-web.rule=Host(`app.example.com`)
+      # - traefik.http.routers.starterkit-web.entrypoints=websecure
+      # - traefik.http.routers.starterkit-web.tls.certresolver=letsencrypt
+      # - traefik.http.services.starterkit-web.loadbalancer.server.port=4301
+
+networks:
+  dokploy-network:
+    external: true
+
+# Docker named volume (Dokploy Method 2) for persisted log files.
+volumes:
+  app_logs:

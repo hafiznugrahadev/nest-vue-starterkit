@@ -1,0 +1,259 @@
+# ╭──────────────────────────────────────────────────────────────────────────╮
+# │ DEV stack — full local environment with HOT RELOAD                          │
+# │   infra:  postgres + redis + rustfs + mailpit                               │
+# │   apps:   api (nest --watch) + web (Vite SSR/HMR), bind-mounted        │
+# │   proxy:  nginx → fronts api + web; OrbStack adds HTTPS on the domains │
+# │                                                                            │
+# │ URLs (OrbStack auto-issues HTTPS for these *.local domains):                │
+# │   https://app.starterkit.local  → web                                 │
+# │   https://api.starterkit.local  → api                                       │
+# │ Run:  docker compose up            (full hot-reload stack)                   │
+# │ Infra only:  docker compose up postgres redis                               │
+# ╰──────────────────────────────────────────────────────────────────────────╯
+name: starterkit-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: starterkit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-starterkit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-starterkit}
+      POSTGRES_DB: ${POSTGRES_DB:-starterkit}
+    # Host port forwarding disabled — connect via OrbStack domain (postgres.starterkit.local:5432).
+    # ports:
+    #   - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-starterkit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # OrbStack domain → connect DB clients at postgres.starterkit.local:5432.
+    labels:
+      - dev.orbstack.domains=postgres.starterkit.local
+    networks: [localdev]
+
+  redis:
+    image: redis:7-alpine
+    container_name: starterkit-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    # Host port forwarding disabled — connect via OrbStack domain (redis.starterkit.local:6379).
+    # ports:
+    #   - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # OrbStack domain → connect redis clients at redis.starterkit.local:6379.
+    labels:
+      - dev.orbstack.domains=redis.starterkit.local
+    networks: [localdev]
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: starterkit-rustfs
+    restart: unless-stopped
+    user: "10001:10001"
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    # Host port forwarding disabled — console UI via OrbStack domain (rustfs.starterkit.local).
+    # ports:
+    #   - '${RUSTFS_API_PORT:-9000}:9000'
+    #   - '${RUSTFS_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - rustfs_data:/data
+    healthcheck:
+      # rustfs serves an S3 API with no unauthenticated health endpoint — every
+      # path (incl. /healthz/*) returns 403 AccessDenied. A 403 still proves the
+      # HTTP server is alive, so treat any HTTP response as healthy and a failed
+      # connection (no 'HTTP/' status line) as unhealthy.
+      test:
+        [
+          "CMD-SHELL",
+          'wget -q -S -O /dev/null http://localhost:9000/ 2>&1 | grep -q "HTTP/"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # No OrbStack domain here — a single container can't map two custom domains to
+    # two ports. The `rustfs-proxy` (nginx) service below owns both domains and
+    # routes by Host to ports 9000 (S3 API) and 9001 (console). rustfs stays
+    # internal, reachable in-network at rustfs:9000 / rustfs:9001.
+    networks: [localdev]
+
+  # nginx that fans the two rustfs ports out to two OrbStack HTTPS domains.
+  #   https://rustfs.starterkit.local          → rustfs:9000 (S3 API / objects)
+  #   https://console-rustfs.starterkit.local  → rustfs:9001 (console UI)
+  # See docker/nginx/rustfs.conf for the Host-based routing.
+  rustfs-proxy:
+    image: nginx:alpine
+    container_name: starterkit-rustfs-proxy
+    restart: unless-stopped
+    volumes:
+      - ./docker/nginx/rustfs.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      rustfs:
+        condition: service_started
+    # Both custom domains attach to nginx (:80); OrbStack issues HTTPS for each.
+    labels:
+      - dev.orbstack.domains=rustfs.starterkit.local,console-rustfs.starterkit.local
+      - dev.orbstack.http-port=80
+    networks: [localdev]
+
+  api:
+    image: oven/bun:1.3.3
+    container_name: starterkit-api-dev
+    restart: unless-stopped
+    working_dir: /app
+    # Bootstrap via the dev entrypoint script (run with `sh` so the bind-mounted
+    # file needs no exec bit). See docker/dev-api.sh.
+    entrypoint: ["sh", "/app/docker/dev-api.sh"]
+    environment:
+      NODE_ENV: development
+      PORT: ${API_PORT:-4400}
+      API_PREFIX: api
+      DATABASE_URL: postgresql://${POSTGRES_USER:-starterkit}:${POSTGRES_PASSWORD:-starterkit}@postgres:5432/${POSTGRES_DB:-starterkit}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-min-16-chars}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_DAYS: 7
+      # Base URL of the frontend — single source of truth (like Laravel APP_URL).
+      # Served by nginx + OrbStack HTTPS. Override via .env if your domain differs.
+      APP_URL: ${APP_URL:-https://app.starterkit.local}
+      # CORS_ORIGIN defaults to APP_URL in code; set only to explicitly override.
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://app.starterkit.local}
+      # Shared parent domain → refresh cookie reaches both app + api subdomains.
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-starterkit.local}
+      LOG_LEVEL: debug
+      # Dev/E2E: skip rate limiting so rapid test runs aren't throttled.
+      THROTTLE_DISABLED: ${THROTTLE_DISABLED:-true}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SWAGGER_USER: ${SWAGGER_USER:-admin}
+      SWAGGER_PASSWORD: ${SWAGGER_PASSWORD:-admin}
+      # Dev email → Mailpit (catch-all SMTP; web UI at http://localhost:8025).
+      MAIL_TRANSPORT: smtp
+      MAIL_FROM: ${MAIL_FROM:-Starter Kit <no-reply@starterkit.test>}
+      MAIL_SMTP_HOST: mailpit
+      MAIL_SMTP_PORT: 1025
+      MAIL_SMTP_SECURE: "false"
+      # Self-service registration (dev: on). Keep the API + web flags in sync.
+      AUTH_REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
+      # File storage — defaults to local; set STORAGE_DRIVER=s3 in .env to use RustFS.
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://rustfs:9000}
+      S3_BUCKET: ${S3_BUCKET:-starterkit}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-rustfsadmin}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-rustfsadmin}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      # Browser-facing base for stored objects. Host port 9000 is NOT published, so
+      # use the rustfs OrbStack custom domain (→ S3 API 9000) instead of localhost.
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-https://rustfs.starterkit.local/starterkit}
+    # Host port forwarding disabled — served via nginx + OrbStack (api.starterkit.local).
+    # ports:
+    #   - '${API_PORT:-4400}:${API_PORT:-4400}'
+    volumes:
+      - ./:/app
+      - api_node_modules:/app/node_modules # keep the container's linux-native deps
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      rustfs:
+        condition: service_started
+    networks: [localdev]
+  web:
+    image: oven/bun:1.3.3
+    container_name: starterkit-web-dev
+    restart: unless-stopped
+    working_dir: /app
+    # Bootstrap via the dev entrypoint script (installs deps + builds shared-types
+    # before starting Vite). See docker/dev-web.sh.
+    entrypoint: ["sh", "/app/docker/dev-web.sh"]
+    environment:
+      NODE_ENV: development
+      PORT: ${WEB_PORT:-4301}
+      HOST: 0.0.0.0
+      # Browser → API over the public HTTPS domain (nginx + OrbStack TLS).
+      VITE_API_BASE: ${VITE_API_BASE:-https://api.starterkit.local/api}
+      VITE_REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
+      # HMR client dials the public host over wss (behind the proxy).
+      VITE_HMR_HOST: ${VITE_HMR_HOST:-app.starterkit.local}
+      # Bind-mount file events don't cross into the container on macOS/Windows,
+      # so Vite must poll for HMR to work.
+      VITE_DEV_POLLING: "true"
+    # Host port forwarding disabled — served via nginx + OrbStack (app.starterkit.local).
+    # ports:
+    #   - '${WEB_PORT:-4301}:${WEB_PORT:-4301}'
+    volumes:
+      - ./:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+    networks: [localdev]
+
+  # Dev mail catcher — SMTP sink + web UI. The API (MAIL_TRANSPORT=smtp) sends here;
+  # open the UI to read password-reset and other emails. Not for production.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: starterkit-mailpit
+    restart: unless-stopped
+    # Host port forwarding disabled — SMTP reachable in-network (mailpit:1025); UI via OrbStack domain.
+    # ports:
+    #   - '${MAILPIT_SMTP_PORT:-1025}:1025' # SMTP endpoint (API → mailpit:1025)
+    #   - '${MAILPIT_UI_PORT:-8025}:8025' # Web UI → http://localhost:8025
+    # OrbStack domain → the web UI (port 8025) at mailpit.starterkit.local.
+    labels:
+      - dev.orbstack.domains=mailpit.starterkit.local
+      - dev.orbstack.http-port=8025
+    networks: [localdev]
+
+  # Lightweight web UI for PostgreSQL. No host port is published — OrbStack issues
+  # HTTPS for the domain below and forwards to the container's port 8080:
+  #   https://adminer.starterkit.local  → Adminer
+  # The login is pre-filled with the `postgres` service (creds from the env above).
+  # The "simple" theme (docker/adminer/adminer.css) is auto-loaded by Adminer.
+  adminer:
+    image: adminer:latest
+    container_name: starterkit-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DEFAULT_DB: ${POSTGRES_DB:-starterkit}
+    labels:
+      - dev.orbstack.domains=adminer.starterkit.local
+    volumes:
+      - ./docker/adminer/adminer.css:/var/www/html/adminer.css:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [localdev]
+
+# Local dev network — created automatically by `docker compose up`.
+networks:
+  localdev:
+    name: localdev
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rustfs_data:
+  api_node_modules:
+  web_node_modules:

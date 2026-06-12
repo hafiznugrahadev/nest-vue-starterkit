@@ -1,0 +1,10 @@
+node_modules
+dist
+.output
+.nuxt
+.turbo
+coverage
+bun.lock
+**/generated/**
+**/routeTree.gen.ts
+apps/api/prisma/migrations/**

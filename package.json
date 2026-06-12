@@ -1,0 +1,44 @@
+{
+  "name": "starterkit",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.20.0"
+  },
+  "description": "Starter Kit — NestJS API + Vue 3 SPA web monorepo (Bun + Turbo)",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "lint-staged": {
+    "*.{ts,vue}": "prettier --write",
+    "*.{json,md}": "prettier --write"
+  },
+  "packageManager": "bun@1.3.3",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "serve": "turbo run dev",
+    "serve:api": "turbo run dev --filter=@starterkit/api",
+    "serve:web": "turbo run dev --filter=@starterkit/web",
+    "build": "turbo run build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,vue,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,vue,json,md}\"",
+    "prepare": "husky"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
