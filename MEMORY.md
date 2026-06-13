@@ -279,3 +279,17 @@ Read this file at the start of every session. Never contradict a logged decision
 - Bind-mounting `/data` to a host path — requires `chown -R 10001:10001` on the host dir before first run; a named volume is zero-config.
 - Making RustFS a Docker Compose profile — the service is lightweight; always-on keeps the dev stack consistent.
 - Separate `S3_ACCESS_KEY`/`S3_SECRET_KEY` vars for RustFS — reusing `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` means the same `.env` values drive both RustFS at startup and the NestJS S3 driver, no duplication.
+
+---
+
+## 2026-06-13, Form-in-modal — reset validation on close so X/Cancel never flash errors
+
+**What was decided:** Any vee-validate form inside a Reka UI dialog must reset its validation when the modal closes. In the `watch(open)` handler, add an `else` (closing) branch that calls `resetForm({ values: { ...values } })` — clears errors + `touched`, but keeps the current field values. Applied to `apps/web/src/features/user/components/UserFormModal.vue`; the same pattern applies to every future form-in-modal.
+
+**Why:** Fields validate on blur (`handleBlur($event, true)` in `components/fields/*`). Clicking X / Cancel / the overlay / Esc blurs the active field, which fires blur-validation and flashed an error (e.g. "Name is too short") during the close animation — wrong, since closing ≠ submitting. The fix hinges on two facts: (1) the field error is gated on `meta.touched` (`error = meta.touched ? errorMessage : undefined`), and (2) `resetForm` sets `touched = false` while the async blur-validation only mutates `errorMessage`, never `touched`. So even a late-resolving validation can't re-show the error after reset. Keeping current values (`{ ...values }`) stops the fields visibly emptying during the 150ms close fade. Covers all close paths because they all flip the `open` model → the watch fires. Verified with focused Playwright specs (Cancel/X/reopen show no error; submit still does).
+
+**What was rejected:**
+
+- `@mousedown.prevent` on Cancel/X only — stops the blur for those two buttons but not the overlay-click or Esc close paths.
+- `resetForm()` to initial values on close — empties the fields visibly during the fade-out (jarring); pass `{ values: { ...values } }` to keep them.
+- Removing blur-validation (`handleBlur($event, true)` → `false`) — loses the intended inline feedback while tabbing between fields; the problem is only on close, not on edit.

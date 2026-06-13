@@ -28,7 +28,7 @@ const validationSchema = computed(() =>
   toTypedSchema(isEdit.value ? editUserSchema : createUserSchema),
 );
 
-const { handleSubmit, resetForm } = useForm({
+const { handleSubmit, resetForm, values } = useForm({
   validationSchema,
   initialValues: { email: '', name: '', password: '', roles: [] as UserRole[] },
 });
@@ -43,6 +43,13 @@ watch(open, (isOpen) => {
         roles: props.user ? ([...props.user.roles] as UserRole[]) : [],
       },
     });
+  } else {
+    // Closing (X / Cancel / overlay / Esc) blurs the active field, which would
+    // otherwise fire blur-validation and flash an error during the close
+    // animation. Reset clears errors + touched (so a late async validation can't
+    // re-show: the field error is gated on `meta.touched`); keep current values
+    // so the fields don't visibly empty out mid-fade.
+    resetForm({ values: { ...values } });
   }
 });
 
