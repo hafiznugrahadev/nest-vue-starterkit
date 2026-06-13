@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, ilike, or, sql, SQL } from 'drizzle-orm';
 import { PgColumn, PgTable } from 'drizzle-orm/pg-core';
+import { computeSkip } from '@starterkit/schemas';
 import type { Database } from '@infrastructure/database/drizzle.service';
 import { BaseQueryDto } from '../dto/base-query.dto';
 import { buildPaginationMeta, PaginatedResult } from '../interfaces/paginated-result.interface';
@@ -68,7 +69,7 @@ export abstract class BaseRepository<T> {
         columns: options.columns,
         orderBy,
         limit,
-        offset: query.skip,
+        offset: computeSkip(query),
       }),
       this.countWhere(where),
     ]);

@@ -2,7 +2,7 @@
 import { watch } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { z } from 'zod';
+import { updateProfileSchema } from '@starterkit/schemas';
 import { useI18n } from 'vue-i18n';
 import Card from '~/components/ui/Card.vue';
 import CardHeader from '~/components/ui/CardHeader.vue';
@@ -12,9 +12,8 @@ import Button from '~/components/ui/Button.vue';
 import TextField from '~/components/fields/TextField.vue';
 import { useProfileStore } from '../profile.store';
 
-const editProfileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-});
+// Reuse the shared profile rules; this form only edits `name` and requires it.
+const editProfileSchema = updateProfileSchema.pick({ name: true }).required();
 
 const { t } = useI18n();
 const profile = useProfileStore();

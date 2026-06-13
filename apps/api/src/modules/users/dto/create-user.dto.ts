@@ -1,25 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ArrayNotEmpty, IsArray, IsEmail, IsString, MinLength } from 'class-validator';
-import { IsUnique } from '@common/validators/is-unique.validator';
+import { createZodDto } from 'nestjs-zod';
+import { createUserSchema } from '@starterkit/schemas';
 
-export class CreateUserDto {
-  @ApiProperty({ example: 'jane@starterkit.test' })
-  @IsEmail()
-  @IsUnique({ model: 'user', column: 'email' })
-  email!: string;
-
-  @ApiProperty({ example: 'Jane Doe' })
-  @IsString()
-  name!: string;
-
-  @ApiProperty({ minLength: 8, example: 'password123' })
-  @IsString()
-  @MinLength(8)
-  password!: string;
-
-  @ApiProperty({ type: [String], example: ['USER'], description: 'Role names to assign' })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  roles!: string[];
-}
+/**
+ * Shared with the web create-user form. Email uniqueness is enforced in
+ * UsersService.create (409 on conflict), not here, so the schema stays pure.
+ */
+export class CreateUserDto extends createZodDto(createUserSchema.strict()) {}

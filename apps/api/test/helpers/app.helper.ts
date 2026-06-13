@@ -1,7 +1,6 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
-import { useContainer } from 'class-validator';
 import { AppModule } from '../../src/app.module';
 import { ResponseInterceptor } from '../../src/common/interceptors/response.interceptor';
 import { AllExceptionsFilter } from '../../src/common/filters/all-exceptions.filter';
@@ -16,17 +15,10 @@ export async function createTestApp(): Promise<INestApplication> {
 
   app.use(cookieParser());
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  // The global ZodValidationPipe is registered in AppModule via APP_PIPE, so it
+  // applies here without manual wiring (mirrors production main.ts).
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
-  useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   await app.init();
   return app;

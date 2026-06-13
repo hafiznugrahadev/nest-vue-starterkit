@@ -1,4 +1,12 @@
-import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { users } from '@infrastructure/database/schema';
 import { BaseCrudService } from '@common/services/base-crud.service';
 import { PaginatedResult } from '@common/interfaces/paginated-result.interface';
 import { hashPassword, verifyPassword } from '@common/utils/password';
@@ -62,6 +70,11 @@ export class UsersService extends BaseCrudService<
   }
 
   override async create(dto: CreateUserDto): Promise<UserEntity> {
+    // Email uniqueness — enforced here (was the class-validator @IsUnique async
+    // validator). Maps to a clean 409 before the insert.
+    if (await this.usersRepository.exists(eq(users.email, dto.email))) {
+      throw new ConflictException(`email already exists`);
+    }
     const { roles, password, ...rest } = dto;
     const created = await this.usersRepository.createWithRoles(
       { ...rest, password: await hashPassword(password) },

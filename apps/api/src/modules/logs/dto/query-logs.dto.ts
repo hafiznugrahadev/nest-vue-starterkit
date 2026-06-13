@@ -1,25 +1,18 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
-import { BaseQueryDto } from '@common/dto/base-query.dto';
+import { createZodDto } from 'nestjs-zod';
+import { baseQuerySchema } from '@starterkit/schemas';
+import { z } from 'zod';
 
 /** Log levels the viewer can filter by (mirrors pino's numeric levels). */
 export const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
 /**
- * Query for GET /logs/entries. Inherits page/limit/search from BaseQueryDto;
- * `search` is the free-text filter applied across msg + the raw record.
+ * Query for GET /logs/entries. BE-only, so its schema stays local — it extends the
+ * shared `baseQuerySchema` (page/limit/search) with the log file + level filters.
  */
-export class QueryLogsDto extends BaseQueryDto {
-  @ApiProperty({
-    description: 'Log file name (from GET /logs/files)',
-    example: 'app.2026-06-11.1.log',
-  })
-  @IsString()
-  file!: string;
+const queryLogsSchema = baseQuerySchema.extend({
+  file: z.string().min(1),
+  level: z.enum(LOG_LEVELS).optional(),
+});
 
-  @ApiPropertyOptional({ enum: LOG_LEVELS, description: 'Filter by exact log level' })
-  @IsOptional()
-  @IsIn(LOG_LEVELS as unknown as string[])
-  level?: LogLevel;
-}
+export class QueryLogsDto extends createZodDto(queryLogsSchema) {}

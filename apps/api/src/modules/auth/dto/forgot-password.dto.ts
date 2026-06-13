@@ -1,8 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { forgotPasswordSchema } from '@starterkit/schemas';
 
-export class ForgotPasswordDto {
-  @ApiProperty({ example: 'admin@starterkit.test' })
-  @IsEmail()
-  email!: string;
-}
+export class ForgotPasswordDto extends createZodDto(forgotPasswordSchema.strict()) {}

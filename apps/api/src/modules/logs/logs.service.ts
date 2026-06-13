@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { open, readdir, stat } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
+import { computeSkip } from '@starterkit/schemas';
 import {
   buildPaginationMeta,
   type PaginatedResult,
@@ -111,7 +112,8 @@ export class LogsService {
     entries.reverse(); // file is oldest-first; viewer wants newest-first
 
     const total = entries.length;
-    const data = entries.slice(query.skip, query.skip + query.limit);
+    const skip = computeSkip(query);
+    const data = entries.slice(skip, skip + query.limit);
     return { data, meta: buildPaginationMeta(total, query.page, query.limit) };
   }
 

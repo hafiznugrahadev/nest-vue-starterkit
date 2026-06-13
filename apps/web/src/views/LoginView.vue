@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { z } from 'zod';
+import { loginSchema } from '@starterkit/schemas';
 import { toast } from 'vue-sonner';
 import { Boxes } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
@@ -14,18 +14,13 @@ import { APP_NAME } from '~/lib/constants';
 
 const REGISTRATION_ENABLED = import.meta.env['VITE_REGISTRATION_ENABLED'] === 'true';
 
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
 const { handleSubmit, isSubmitting } = useForm({
-  validationSchema: toTypedSchema(schema),
+  validationSchema: toTypedSchema(loginSchema),
   initialValues: { email: '', password: '' },
 });
 

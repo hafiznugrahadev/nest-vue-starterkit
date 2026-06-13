@@ -1,6 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { join, resolve } from 'node:path';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
@@ -10,7 +10,7 @@ import { databaseConfig, redisConfig } from '@config/database.config';
 import { storageConfig } from '@config/storage.config';
 import { mailConfig } from '@config/mail.config';
 import { RequestIdMiddleware } from '@common/middleware/request-id.middleware';
-import { IsUniqueConstraint } from '@common/validators/is-unique.validator';
+import { ZodValidationPipe } from '@common/pipes/zod-validation.pipe';
 import { DrizzleModule } from '@infrastructure/database/drizzle.module';
 import { RedisModule } from '@infrastructure/redis/redis.module';
 import { StorageModule } from '@infrastructure/storage/storage.module';
@@ -98,9 +98,9 @@ import { LogsModule } from '@modules/logs/logs.module';
     NotificationsModule,
     LogsModule,
   ],
-  // Provided here too so class-validator's container can resolve the async validator.
   providers: [
-    IsUniqueConstraint,
+    // SPEC DRY #7 — one global Zod validation pipe governs every DTO.
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
     // Apply rate limiting across every route by default.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

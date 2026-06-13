@@ -1,14 +1,13 @@
 import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { useContainer } from 'class-validator';
 import cookieParser from 'cookie-parser';
 import basicAuth from 'express-basic-auth';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Logger } from 'nestjs-pino';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from '@common/interceptors/response.interceptor';
@@ -63,22 +62,12 @@ async function bootstrap() {
   }
   app.enableCors({ origin, credentials: true });
 
-  // SPEC DRY #7 — one global ValidationPipe governs every DTO.
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
+  // SPEC DRY #7 — validation runs through the global ZodValidationPipe registered
+  // in AppModule (APP_PIPE), so DI-backed pipes resolve correctly.
 
   // SPEC DRY #6 — uniform response envelope + uniform error envelope, set once.
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
-
-  // Let class-validator resolve DI-backed validators (e.g. IsUnique).
-  useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   // Swagger docs — toggled + Basic-Auth protected, all driven by ConfigService.
   const docsPath = `${apiPrefix}/docs`;
@@ -98,7 +87,8 @@ async function bootstrap() {
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup(docsPath, app, document);
+    // cleanupOpenApiDoc rewrites the Zod-generated schemas into clean OpenAPI 3.0.
+    SwaggerModule.setup(docsPath, app, cleanupOpenApiDoc(document));
   }
 
   await app.listen(port);

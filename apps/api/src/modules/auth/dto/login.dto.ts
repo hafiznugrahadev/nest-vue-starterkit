@@ -1,13 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { loginSchema } from '@starterkit/schemas';
 
-export class LoginDto {
-  @ApiProperty({ example: 'admin@starterkit.test' })
-  @IsEmail()
-  email!: string;
-
-  @ApiProperty({ example: 'admin123', minLength: 6 })
-  @IsString()
-  @MinLength(6)
-  password!: string;
-}
+/** Validation lives in @starterkit/schemas — shared with the web login form. */
+export class LoginDto extends createZodDto(loginSchema.strict()) {}

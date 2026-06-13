@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
+import { changePasswordSchema } from '@starterkit/schemas';
 import { z } from 'zod';
 import { useI18n } from 'vue-i18n';
 import Card from '~/components/ui/Card.vue';
@@ -12,12 +13,9 @@ import Button from '~/components/ui/Button.vue';
 import PasswordField from '~/components/fields/PasswordField.vue';
 import { useProfileStore } from '../profile.store';
 
-const schema = z
-  .object({
-    currentPassword: z.string().min(1, 'Required'),
-    newPassword: z.string().min(8, 'At least 8 characters'),
-    confirmPassword: z.string().min(1, 'Required'),
-  })
+// Shared current/new-password rules; `confirmPassword` is a UI-only match check.
+const schema = changePasswordSchema
+  .extend({ confirmPassword: z.string().min(1, 'Required') })
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],

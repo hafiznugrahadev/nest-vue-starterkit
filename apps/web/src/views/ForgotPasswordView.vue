@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { z } from 'zod';
+import { forgotPasswordSchema } from '@starterkit/schemas';
 import { Boxes, MailCheck } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import Button from '~/components/ui/Button.vue';
@@ -10,14 +10,12 @@ import TextField from '~/components/fields/TextField.vue';
 import { useAuthStore } from '~/stores/auth.store';
 import { APP_NAME } from '~/lib/constants';
 
-const schema = z.object({ email: z.string().email() });
-
 const { t } = useI18n();
 const auth = useAuthStore();
 const sent = ref(false);
 
 const { handleSubmit, isSubmitting } = useForm({
-  validationSchema: toTypedSchema(schema),
+  validationSchema: toTypedSchema(forgotPasswordSchema),
   initialValues: { email: '' },
 });
 
