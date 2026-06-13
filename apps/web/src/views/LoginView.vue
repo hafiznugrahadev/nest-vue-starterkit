@@ -69,6 +69,7 @@ const onSubmit = handleSubmit(async (values) => {
         :label="t('auth.email')"
         required
         type="email"
+        autoComplete="username"
         placeholder="you@example.com"
       />
       <PasswordField name="password" :label="t('auth.password')" required />

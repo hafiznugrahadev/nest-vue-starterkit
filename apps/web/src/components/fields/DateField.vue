@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 const props = defineProps<{
@@ -36,6 +37,6 @@ const error = computed(() => (meta.touched ? errorMessage.value : undefined));
       "
       @blur="handleBlur($event, true)"
     />
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

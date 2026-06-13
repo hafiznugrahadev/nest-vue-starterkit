@@ -21,7 +21,7 @@ import type { NavItem } from './AppSidebar.vue';
 const props = defineProps<{ expanded: boolean }>();
 
 // NestJS Swagger UI is served by the API at `${apiPrefix}/docs`. VITE_API_BASE
-// already includes the prefix (e.g. https://api.starterkit.local/api), so the
+// already includes the prefix (e.g. https://api.starterkit-dev.orb.local/api), so the
 // docs live one segment deeper.
 const SWAGGER_URL = `${(import.meta.env['VITE_API_BASE'] as string | undefined) ?? 'http://localhost:4400/api'}/docs`;
 

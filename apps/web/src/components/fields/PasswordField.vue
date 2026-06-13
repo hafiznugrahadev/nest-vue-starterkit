@@ -3,6 +3,7 @@ import { computed, ref, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 const props = defineProps<{
@@ -10,6 +11,7 @@ const props = defineProps<{
   label?: string;
   required?: boolean;
   placeholder?: string;
+  autoComplete?: string;
 }>();
 
 const show = ref(false);
@@ -29,6 +31,7 @@ const error = computed(() => (meta.touched ? errorMessage.value : undefined));
         v-model="value"
         :type="show ? 'text' : 'password'"
         :placeholder="props.placeholder"
+        :autocomplete="props.autoComplete || 'current-password'"
         :class="
           cn(
             'flex h-11 w-full rounded-lg border border-input bg-transparent px-4 py-2.5 pr-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50',
@@ -47,6 +50,6 @@ const error = computed(() => (meta.touched ? errorMessage.value : undefined));
         <Eye v-else class="h-4 w-4" />
       </button>
     </div>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

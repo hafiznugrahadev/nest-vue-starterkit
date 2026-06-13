@@ -64,13 +64,13 @@ Running `bun run serve` (host processes):
 - Web → http://localhost:4301
 
 Or the full stack in Docker (`docker compose up`). The containers publish **no host
-ports** — OrbStack routes to them directly over HTTPS via each service's
-`dev.orbstack.domains` label (no nginx, no manual TLS):
+ports** — OrbStack routes to each over HTTPS at its auto-domain
+`<service>.starterkit-dev.orb.local` (no manual TLS):
 
-- Web → https://app.starterkit.local · API → https://api.starterkit.local/api
-- Adminer → https://adminer.starterkit.local · Mailpit → https://mailpit.starterkit.local
-- RustFS console → https://rustfs.starterkit.local
-- Postgres → `postgres.starterkit.local:5432` · Redis → `redis.starterkit.local:6379`
+- Web → https://web.starterkit-dev.orb.local · API → https://api.starterkit-dev.orb.local/api
+- Adminer → https://adminer.starterkit-dev.orb.local · Mailpit → https://mailpit.starterkit-dev.orb.local
+- RustFS S3 API → https://rustfs.starterkit-dev.orb.local · console → https://console-rustfs.starterkit-dev.orb.local
+- Postgres → `postgres.starterkit-dev.orb.local:5432` · Redis → `redis.starterkit-dev.orb.local:6379`
 
 > **CORS + cookies:** the refresh cookie requires an explicit `CORS_ORIGIN` (the web
 > origin) on the API — a wildcard `*` is rejected by browsers for credentialed requests.

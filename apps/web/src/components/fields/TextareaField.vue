@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import Textarea from '~/components/ui/Textarea.vue';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 const props = withDefaults(
@@ -34,6 +35,6 @@ const error = computed(() => (meta.touched ? errorMessage.value : undefined));
       :class="cn(error && 'border-destructive focus:ring-destructive')"
       @blur="handleBlur($event, true)"
     />
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

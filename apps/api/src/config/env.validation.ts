@@ -46,6 +46,13 @@ export class EnvironmentVariables {
   @IsString()
   DATABASE_URL!: string;
 
+  // A full connection string (redis://… or rediss:// for TLS). When set it takes
+  // precedence over the discrete REDIS_HOST/PORT/PASSWORD fields below — handy for
+  // managed providers that hand you one URL.
+  @IsString()
+  @IsOptional()
+  REDIS_URL?: string;
+
   @IsString()
   @IsOptional()
   REDIS_HOST = 'localhost';

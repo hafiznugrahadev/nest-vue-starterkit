@@ -3,6 +3,7 @@ import { computed, ref, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import { X } from 'lucide-vue-next';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 const props = withDefaults(
@@ -85,6 +86,6 @@ function handleInput() {
         @blur="handleBlur($event, true)"
       />
     </div>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

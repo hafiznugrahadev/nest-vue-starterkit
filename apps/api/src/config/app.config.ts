@@ -32,7 +32,7 @@ export const appConfig = registerAs('app', () => ({
     // Cross-site in prod (web + api on different hosts) requires SameSite=None+Secure.
     secure: (process.env.NODE_ENV ?? 'development') === 'production',
     // Shared parent domain so the refresh cookie reaches both web + api subdomains
-    // (e.g. starterkit.local → app.starterkit.local + api.starterkit.local).
+    // (e.g. starterkit-dev.orb.local → web.starterkit-dev.orb.local + api.starterkit-dev.orb.local).
     // Unset = host-only cookie (single-origin / localhost dev).
     domain: process.env.COOKIE_DOMAIN || undefined,
   },

@@ -77,6 +77,8 @@ services:
       PORT: ${API_PORT:-4400}
       API_PREFIX: api
       DATABASE_URL: postgresql://${POSTGRES_USER:-starterkit}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-starterkit}?schema=public
+      # Set REDIS_URL in .env to use a managed Redis (overrides host/port/password).
+      REDIS_URL: ${REDIS_URL:-}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}

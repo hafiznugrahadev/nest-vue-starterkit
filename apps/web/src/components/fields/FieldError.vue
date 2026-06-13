@@ -1,0 +1,7 @@
+<script setup lang="ts">
+defineProps<{ error?: string }>();
+</script>
+
+<template>
+  <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+</template>

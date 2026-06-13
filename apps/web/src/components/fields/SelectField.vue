@@ -5,6 +5,7 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui';
 import { Check, ChevronsUpDown, X } from 'lucide-vue-next';
 import PopoverContent from '~/components/ui/PopoverContent.vue';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 interface SelectOption {
@@ -149,6 +150,6 @@ function getLabel(v: string) {
         </div>
       </PopoverContent>
     </PopoverRoot>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

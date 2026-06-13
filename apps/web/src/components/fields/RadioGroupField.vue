@@ -4,6 +4,7 @@ import { useField } from 'vee-validate';
 import RadioGroup from '~/components/ui/RadioGroup.vue';
 import RadioGroupItem from '~/components/ui/RadioGroupItem.vue';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 
 const props = defineProps<{
   name: string;
@@ -38,6 +39,6 @@ const model = computed({
         </Label>
       </div>
     </RadioGroup>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

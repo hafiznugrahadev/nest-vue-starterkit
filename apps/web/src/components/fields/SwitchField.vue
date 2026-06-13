@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import Switch from '~/components/ui/Switch.vue';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 
 const props = defineProps<{ name: string; label?: string; required?: boolean }>();
 
@@ -27,6 +28,6 @@ const model = computed({
         <span v-if="props.required" class="ml-0.5 text-destructive">*</span>
       </Label>
     </div>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

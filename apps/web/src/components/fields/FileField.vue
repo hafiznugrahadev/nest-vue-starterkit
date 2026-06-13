@@ -3,6 +3,7 @@ import { computed, ref, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import { Paperclip, X } from 'lucide-vue-next';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 import { cn } from '~/lib/utils';
 
 const props = defineProps<{
@@ -69,6 +70,6 @@ function handleClear(e: Event) {
         <X class="h-4 w-4" />
       </span>
     </button>
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>

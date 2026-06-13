@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue';
 import { useField } from 'vee-validate';
 import Slider from '~/components/ui/Slider.vue';
 import Label from '~/components/ui/Label.vue';
+import FieldError from '~/components/fields/FieldError.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -38,6 +39,6 @@ const model = computed({
       <span class="text-sm text-muted-foreground">{{ value }}</span>
     </div>
     <Slider :id="props.name" v-model="model" :min="props.min" :max="props.max" :step="props.step" />
-    <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
+    <FieldError :error="error" />
   </div>
 </template>
