@@ -157,3 +157,41 @@ body {
   background-color: var(--border);
   border-radius: 9999px;
 }
+
+/* Dialog (Modal / Command palette) enter+exit animations. Reka UI keeps the node
+   mounted on close until the closed-state animation finishes, so both run.
+   Opacity-only (pure fade): the modal is centered via Tailwind's `translate`
+   property, so animating `transform` here would stack on top of it and shift the
+   panel off-centre — keep these to opacity alone. */
+@keyframes dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dialog-content-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

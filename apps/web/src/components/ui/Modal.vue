@@ -23,11 +23,14 @@ const open = defineModel<boolean>('open', { default: false });
 <template>
   <DialogRoot v-model:open="open">
     <DialogPortal>
-      <DialogOverlay class="fixed inset-0 bg-black/60 z-50" />
+      <DialogOverlay
+        class="fixed inset-0 bg-black/60 z-50 data-[state=open]:animate-[dialog-overlay-in_200ms_ease-out] data-[state=closed]:animate-[dialog-overlay-out_150ms_ease-in]"
+      />
       <DialogContent
         :class="
           cn(
             'fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-theme-md',
+            'data-[state=open]:animate-[dialog-content-in_200ms_ease-out] data-[state=closed]:animate-[dialog-content-out_150ms_ease-in]',
             props.class,
           )
         "

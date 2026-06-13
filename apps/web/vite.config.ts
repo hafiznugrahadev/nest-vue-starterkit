@@ -3,7 +3,13 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  define: {
+    // Vite 7 no longer injects process.env.NODE_ENV into browser bundles by
+    // default, which breaks Vue's __DEV__ resolution and silently disables
+    // DevTools. Explicitly opt in when running the dev server.
+    __VUE_PROD_DEVTOOLS__: command !== 'build',
+  },
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
@@ -25,4 +31,4 @@ export default defineConfig({
     // Vite blocks unknown Host headers by default; allow the proxied domain.
     allowedHosts: process.env['VITE_HMR_HOST'] ? [process.env['VITE_HMR_HOST']] : undefined,
   },
-});
+}));
