@@ -6,7 +6,7 @@
 # Cached install from the lockfile. --ignore-scripts skips workspace postinstalls
 # that would otherwise run before the shared-types build later in this stage.
 # bcrypt ships prebuilt binaries, so it needs no install script.
-FROM oven/bun:1.3.3 AS deps
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 COPY package.json bun.lock turbo.json tsconfig.base.json ./
 COPY packages/shared-types/package.json ./packages/shared-types/
@@ -25,7 +25,7 @@ RUN bun run --filter @starterkit/shared-types build \
     && bun run --filter @starterkit/api build
 
 # ─────────────────────────────── runtime ─────────────────────────────────────
-FROM oven/bun:1.3.3-slim AS runtime
+FROM oven/bun:1.3.14-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app/apps/api
 # CA roots for TLS connections to managed Postgres/Redis.
