@@ -3,7 +3,7 @@
 # Build context MUST be the repo root: `docker build -f apps/web/Dockerfile .`
 
 # ─────────────────────────────── deps ────────────────────────────────────────
-FROM oven/bun:1.3.3 AS deps
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 COPY package.json bun.lock turbo.json tsconfig.base.json ./
 COPY packages/shared-types/package.json ./packages/shared-types/
@@ -25,7 +25,7 @@ RUN bun run --filter @starterkit/shared-types build \
     && bun run --filter @starterkit/web build
 
 # ─────────────────────────────── runtime ─────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 COPY docker/nginx/web.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 4301
