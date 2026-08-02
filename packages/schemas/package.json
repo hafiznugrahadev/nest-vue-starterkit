@@ -24,9 +24,9 @@
   },
   "dependencies": {
     "@starterkit/shared-types": "workspace:*",
-    "zod": "^3.25.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^7.0.2"
   }
 }
